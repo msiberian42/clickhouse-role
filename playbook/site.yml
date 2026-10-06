@@ -8,10 +8,10 @@
   hosts: vector
   become: true
   roles:
-    - role: ../vector-role
+    - role: vector-role
 
 - name: Install LightHouse
   hosts: lighthouse
   become: true
   roles:
-    - role: ../lighthouse-role
+    - role: lighthouse-role
