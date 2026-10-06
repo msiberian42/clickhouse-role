@@ -3,8 +3,27 @@
 # Molecule calls this playbook with `molecule verify`.
 - name: Verify
   hosts: instance
-  gather_facts: false # Quicker, if you do not need facts
+  gather_facts: false
   tasks:
-    - name: Assert something
-      ansible.builtin.assert:
-        that: true
+    - name: Check ClickHouse service is running
+      become: true
+      ansible.builtin.command: systemctl is-active clickhouse-server
+      register: clickhouse_service_status
+      changed_when: false
+      retries: 10
+      delay: 3
+      until: clickhouse_service_status.stdout == "active"
+
+    - name: Check ClickHouse accepts SQL queries
+      ansible.builtin.command: clickhouse-client --query "SELECT 1"
+      register: clickhouse_healthcheck
+      changed_when: false
+      retries: 10
+      delay: 3
+      until: clickhouse_healthcheck.rc == 0
+
+    - name: Check database created by the role
+      ansible.builtin.command: clickhouse-client --query "SELECT count() FROM system.databases WHERE name = 'logs'"
+      register: clickhouse_logs_database
+      changed_when: false
+      failed_when: clickhouse_logs_database.rc != 0 or clickhouse_logs_database.stdout | trim != "1"
